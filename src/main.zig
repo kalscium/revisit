@@ -4,7 +4,24 @@ const xlsxio = @cImport({
     @cInclude("xlsxio_write.h");
 });
 
+const error_file_path = "ERROR.txt";
+
 pub fn main() !void {
+    // remove any previous errors if there are any
+    std.fs.cwd().deleteFile(error_file_path) catch {};
+
+    // Error handling
+    if (run()) {}
+    else |err| {
+        // write to error file
+        var file = try std.fs.cwd().createFile(error_file_path, .{});
+        try std.fmt.format(file.writer(), "{}", .{err});
+        file.close();
+        return err;
+    }
+}
+
+fn run() !void {
     // create an example sheet
     const writer = xlsxio.xlsxiowrite_open("text.xlsx", "nice")
         orelse return error.CannotCreateSheet;
