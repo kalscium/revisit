@@ -1,3 +1,10 @@
+pub const revit = @import("revit.zig");
+
+// no lazy
+comptime {
+    _ = revit;
+}
+
 const std = @import("std");
 const xlsxio = @cImport({
     @cInclude("xlsxio_read.h");
