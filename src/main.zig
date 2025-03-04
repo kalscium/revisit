@@ -10,6 +10,9 @@ const xlsxio = @cImport({
     @cInclude("xlsxio_read.h");
     @cInclude("xlsxio_write.h");
 });
+const libxls = @cImport({
+    @cInclude("xls.h");
+});
 
 const error_file_path = "ERROR.txt";
 
@@ -39,4 +42,11 @@ fn run() !void {
     xlsxio.xlsxiowrite_add_column(writer, "example", 0);
     xlsxio.xlsxiowrite_next_row(writer);
     xlsxio.xlsxiowrite_add_cell_string(writer, "hello, world!");
+
+    // read from example xls file
+    var xls_error: c_uint = @intCast(libxls.LIBXLS_OK);
+    const wb = libxls.xls_open_file("example.xls", "UTF-8", &xls_error);
+    defer libxls.xls_close(wb);
+    if (wb == null)
+        return error.UnableToOpenXLS;
 }

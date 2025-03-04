@@ -1,3 +1,6 @@
 .zig-cache/
 zig-out/
 *.xlsx
+*.xls
+*.csv
+ERROR.txt

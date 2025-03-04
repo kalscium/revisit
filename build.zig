@@ -111,9 +111,36 @@ pub fn build(b: *std.Build) void {
     xlsxio.linkLibrary(expat);
     xlsxio.linkLibrary(minizip);
 
+    // LibXLS Library
+    const libxls_dep = b.dependency("libxls", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    const libxls = b.addStaticLibrary(.{
+        .name = "libxls",
+        .target = target,
+        .optimize = optimize,
+    });
+    libxls.addCSourceFiles(.{
+        .root = libxls_dep.path("src"),
+        .files = &.{
+            "xls.c",
+            "locale.c",
+            "endian.c",
+            "ole.c",
+            "xlstool.c",
+        },
+    });
+    libxls.addIncludePath(libxls_dep.path("include/"));
+    libxls.addConfigHeader(b.addConfigHeader(.{}, .{}));
+    libxls.root_module.addCMacro("PACKAGE_VERSION", "\"1.6.3\"");
+    libxls.linkLibC();
+
     // Add the libraries to the exe
     exe.addIncludePath(xlsxio_dep.path("include/"));
+    exe.addIncludePath(libxls_dep.path("include/"));
     exe.linkLibrary(xlsxio);
+    exe.linkLibrary(libxls);
 
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default
