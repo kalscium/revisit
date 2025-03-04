@@ -31,6 +31,9 @@ pub fn main() !void {
 }
 
 fn run() !void {
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    const allocator = arena.allocator();
+
     // read from the example revit file 
     const reader = xlsxio.xlsxioread_open("revit.xlsx");
     if (reader == null)
@@ -39,17 +42,28 @@ fn run() !void {
     const sheet = xlsxio.xlsxioread_sheet_open(reader, sheet_name, xlsxio.XLSXIOREAD_SKIP_NONE);
     if (sheet == null)
         return error.NoXLSXSheets;
-    // skip the first row
     if (xlsxio.xlsxioread_sheet_next_row(sheet) != 1)
         return error.EmptyXLSX;
-    var row: ?revit.Row = revit.Row.parse(sheet);
-    while (row != null) : (row = revit.Row.parse(sheet)) {
-        defer row.?.deinit();
+
+    // iterate through and create an arraylist of all the parsed rows
+    var rows = std.ArrayList(revit.Row).init(allocator);
+    defer {
+        // free rows
+        for (rows.items) |row|
+            row.deinit();
+        rows.deinit();
+    }
+
+    var row_exists = try revit.Row.parse(sheet, &rows);
+    while (row_exists) : (row_exists = try revit.Row.parse(sheet, &rows)) {
+        // get row
+        const row = &rows.getLast();
+
         std.debug.print("row: {{ .id = \"{s}\", .name = \"{s}\", .revision = \"{s}\", .date = {any} }}\n", .{
-            row.?.id,
-            row.?.name,
-            row.?.revision orelse "null",
-            row.?.date orelse revit.Date{ 0, 0, 0 },
+            row.id,
+            row.name,
+            row.revision orelse "null",
+            row.date orelse revit.Date{ 0, 0, 0 },
         });
         if (xlsxio.xlsxioread_sheet_next_row(sheet) != 1)
             break;

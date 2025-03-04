@@ -12,14 +12,17 @@ pub const Row = struct {
     revision: ?[*:0]u8,
     date: ?Date,
 
-    /// Parses a row in a revit-generated spreadsheet
-    pub fn parse(reader: xlsxio.xlsxioreadersheet) ?Row {
+    /// Parses a row in a revit-generated spreadsheet and inserts it into a
+    /// specified list of rows.
+    ///
+    /// Returns false upon no row found.
+    pub fn parse(reader: xlsxio.xlsxioreadersheet, table: *std.ArrayList(Row)) !bool {
         const id = xlsxio.xlsxioread_sheet_next_cell(reader);
         const name = xlsxio.xlsxioread_sheet_next_cell(reader);
 
         // check if there's even any contents
         if (cellEmpty(@ptrCast(id)))
-            return null;
+            return false;
 
         // get the revision if there is one
         var revision = xlsxio.xlsxioread_sheet_next_cell(reader);
@@ -36,15 +39,14 @@ pub const Row = struct {
         else
             date = parseDate(@ptrCast(date_raw)) catch null;
 
-        // _ = xlsxio.xlsxioread_sheet_next_row(reader);
-
-        // return the parsed row
-        return .{
+        // append the row
+        try table.append(.{
             .id = @ptrCast(id),
             .name = @ptrCast(name),
             .revision = @ptrCast(revision),
             .date = date,
-        };
+        });
+        return true;
     }
 
     /// Frees the memory stored in the row
