@@ -8,7 +8,6 @@ comptime {
 const std = @import("std");
 const xlsxio = @cImport({
     @cInclude("xlsxio_read.h");
-    @cInclude("xlsxio_write.h");
 });
 const libxls = @cImport({
     @cInclude("xls.h");
@@ -32,20 +31,33 @@ pub fn main() !void {
 }
 
 fn run() !void {
-    // create an example sheet
-    const writer = xlsxio.xlsxiowrite_open("text.xlsx", "nice")
-        orelse return error.CannotCreateSheet;
-    defer _ = xlsxio.xlsxiowrite_close(writer);
-
-    // write to the first coloumn
-    xlsxio.xlsxiowrite_set_row_height(writer, 1);
-    xlsxio.xlsxiowrite_add_column(writer, "example", 0);
-    xlsxio.xlsxiowrite_next_row(writer);
-    xlsxio.xlsxiowrite_add_cell_string(writer, "hello, world!");
+    // read from the example revit file 
+    const reader = xlsxio.xlsxioread_open("revit.xlsx");
+    if (reader == null)
+        return error.UnableToOpenXLSX;
+    const sheet_name: ?[*:0]u8 = null;
+    const sheet = xlsxio.xlsxioread_sheet_open(reader, sheet_name, xlsxio.XLSXIOREAD_SKIP_NONE);
+    if (sheet == null)
+        return error.NoXLSXSheets;
+    // skip the first row
+    if (xlsxio.xlsxioread_sheet_next_row(sheet) != 1)
+        return error.EmptyXLSX;
+    var row: ?revit.Row = revit.Row.parse(sheet);
+    while (row != null) : (row = revit.Row.parse(sheet)) {
+        defer row.?.deinit();
+        std.debug.print("row: {{ .id = \"{s}\", .name = \"{s}\", .revision = \"{s}\", .date = {any} }}\n", .{
+            row.?.id,
+            row.?.name,
+            row.?.revision orelse "null",
+            row.?.date orelse revit.Date{ 0, 0, 0 },
+        });
+        if (xlsxio.xlsxioread_sheet_next_row(sheet) != 1)
+            break;
+    }
 
     // read from example xls file
     var xls_error: c_uint = @intCast(libxls.LIBXLS_OK);
-    const wb = libxls.xls_open_file("example.xls", "UTF-8", &xls_error);
+    const wb = libxls.xls_open_file("monolith.xls", "UTF-8", &xls_error);
     defer libxls.xls_close(wb);
     if (wb == null)
         return error.UnableToOpenXLS;
