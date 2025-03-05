@@ -42,10 +42,8 @@ pub fn convert(rows: []const revit.Row, dates: []const root.Date, reader: *libxl
 
             // get the date through searching then derive the rev location
             for (0.., dates) |i, d| {
-                if (std.mem.eql(u16, &d, &date)) {
+                if (std.mem.eql(u16, &d, &date))
                     rev_loc = @intCast(i + date_coloumn_offset);
-                    std.debug.print("rev: {s}, rev_loc: {}\n", .{ rev, rev_loc.? });
-                }
             }
         }
 

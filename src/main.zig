@@ -36,12 +36,16 @@ pub fn main() !void {
     }
 }
 
+const revit_xlsx_path = "revit.xlsx";
+const monolith_xls_path = "monolith.xls";
+const output_xlsx_path = "output.xlsx";
+
 fn run() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     const allocator = arena.allocator();
 
     // read from the example revit file 
-    const reader = xlsxio.xlsxioread_open("revit.xlsx");
+    const reader = xlsxio.xlsxioread_open(revit_xlsx_path);
     if (reader == null)
         return error.UnableToOpenXLSX;
     const sheet_name: ?[*:0]u8 = null;
@@ -61,23 +65,13 @@ fn run() !void {
     }
 
     var row_exists = try revit.Row.parse(sheet, &rows);
-    while (row_exists) : (row_exists = try revit.Row.parse(sheet, &rows)) {
-        // get row
-        const row = &rows.getLast();
-
-        std.debug.print("row: {{ .id = \"{s}\", .name = \"{s}\", .revision = \"{s}\", .date = {any} }}\n", .{
-            row.id,
-            row.name,
-            row.revision orelse "null",
-            row.date orelse Date{ 0, 0, 0 },
-        });
+    while (row_exists) : (row_exists = try revit.Row.parse(sheet, &rows))
         if (xlsxio.xlsxioread_sheet_next_row(sheet) != 1)
             break;
-    }
 
     // read from example xls file
     var xls_error: c_uint = @intCast(libxls.LIBXLS_OK);
-    const wb = libxls.xls_open_file("monolith.xls", "UTF-8", &xls_error);
+    const wb = libxls.xls_open_file(monolith_xls_path, "UTF-8", &xls_error);
     defer libxls.xls_close(wb);
     if (wb == null)
         return error.UnableToOpenXLS;
@@ -89,10 +83,9 @@ fn run() !void {
     // get xls date
     const dates = try monolith.parseDates(allocator, ws);
     defer allocator.free(dates);
-    std.debug.print("dates: {any}\n", .{dates});
 
     // open the writer to the output spreadsheet
-    const writer = xlsxio.xlsxiowrite_open("output.xlsx", "output");
+    const writer = xlsxio.xlsxiowrite_open(output_xlsx_path, "output");
     if (writer == null)
         return error.UnableToCreateXLSX;
     defer _ = xlsxio.xlsxiowrite_close(writer);
