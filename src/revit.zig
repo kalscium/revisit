@@ -1,9 +1,7 @@
 //! Code for reading the Revit-generated excel spreadsheets
 
 const std = @import("std");
-const xlsxio = @cImport({
-    @cInclude("xlsxio_read.h");
-});
+const xlsxio = root.xlsxio;
 const root = @import("main.zig");
 
 /// A single row in the revit spreadsheet

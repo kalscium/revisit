@@ -11,10 +11,11 @@ comptime {
 }
 
 const std = @import("std");
-const xlsxio = @cImport({
+pub const xlsxio = @cImport({
     @cInclude("xlsxio_read.h");
+    @cInclude("xlsxio_write.h");
 });
-const libxls = @cImport({
+pub const libxls = @cImport({
     @cInclude("xls.h");
 });
 
@@ -89,4 +90,13 @@ fn run() !void {
     const dates = try monolith.parseDates(allocator, ws);
     defer allocator.free(dates);
     std.debug.print("dates: {any}\n", .{dates});
+
+    // open the writer to the output spreadsheet
+    const writer = xlsxio.xlsxiowrite_open("output.xlsx", "output");
+    if (writer == null)
+        return error.UnableToCreateXLSX;
+    defer _ = xlsxio.xlsxiowrite_close(writer);
+
+    // convert the monolith
+    monolith.convert(rows.items, dates, ws, writer);
 }
