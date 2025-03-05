@@ -4,3 +4,4 @@ zig-out/
 *.xls
 *.csv
 ERROR.txt
+.~lock*

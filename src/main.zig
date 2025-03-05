@@ -1,8 +1,13 @@
 pub const revit = @import("revit.zig");
+pub const monolith = @import("monolith.zig");
+
+/// A numeric date in the format of `yyyy/mm/dd`
+pub const Date = [3]u16;
 
 // no lazy
 comptime {
     _ = revit;
+    _ = monolith;
 }
 
 const std = @import("std");
@@ -63,7 +68,7 @@ fn run() !void {
             row.id,
             row.name,
             row.revision orelse "null",
-            row.date orelse revit.Date{ 0, 0, 0 },
+            row.date orelse Date{ 0, 0, 0 },
         });
         if (xlsxio.xlsxioread_sheet_next_row(sheet) != 1)
             break;
@@ -75,4 +80,13 @@ fn run() !void {
     defer libxls.xls_close(wb);
     if (wb == null)
         return error.UnableToOpenXLS;
+    const ws = libxls.xls_getWorkSheet(wb, 0);
+    if (libxls.xls_parseWorkSheet(ws) != 0)
+        return error.InvalidXLSSheet;
+    defer libxls.xls_close_WS(ws);
+
+    // get xls date
+    const dates = try monolith.parseDates(allocator, ws);
+    defer allocator.free(dates);
+    std.debug.print("dates: {any}\n", .{dates});
 }

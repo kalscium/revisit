@@ -4,13 +4,14 @@ const std = @import("std");
 const xlsxio = @cImport({
     @cInclude("xlsxio_read.h");
 });
+const root = @import("main.zig");
 
 /// A single row in the revit spreadsheet
 pub const Row = struct {
     id: [*:0]u8,
     name: [*:0]u8,
     revision: ?[*:0]u8,
-    date: ?Date,
+    date: ?root.Date,
 
     /// Parses a row in a revit-generated spreadsheet and inserts it into a
     /// specified list of rows.
@@ -33,7 +34,7 @@ pub const Row = struct {
         const date_raw = xlsxio.xlsxioread_sheet_next_cell(reader);
         _ = xlsxio.xlsxioread_free(xlsxio.xlsxioread_sheet_next_cell(reader)); // makes it work for some reason, don't touch it
         defer xlsxio.xlsxioread_free(date_raw);
-        var date: ?Date = undefined;
+        var date: ?root.Date = undefined;
         if (cellEmpty(date_raw))
             date = null
         else
@@ -57,9 +58,6 @@ pub const Row = struct {
     }
 };
 
-/// A numeric date in the format of `yyyy/mm/dd`
-pub const Date = [3]u16;
-
 /// Checks if the contents of a cell is empty or not
 pub fn cellEmpty(contents: ?[*:0]const u8) bool {
     const contents_span = std.mem.span(contents orelse return true);
@@ -68,8 +66,8 @@ pub fn cellEmpty(contents: ?[*:0]const u8) bool {
 }
 
 /// Deserializes / parses the date in the string format `dd/mm/yyyy`
-pub fn parseDate(date: [*:0]const u8) !Date {
-    var date_array: Date = undefined;
+pub fn parseDate(date: [*:0]const u8) !root.Date {
+    var date_array: root.Date = undefined;
 
     // parse the strings
     const data_slice = std.mem.span(date);
